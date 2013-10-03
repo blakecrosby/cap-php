@@ -6,16 +6,82 @@ namespace CAP;
 
 class CAP {
 
-    # Set some variables
+    # We need to run different parsing algorithims based on profile.
+
+    public function get($url,$profile = null) {
+        if ($profile == 'CA') {
+            return $this->getCA($url);
+        }
+
+        else {
+            return $this->getPlain($url);
+        }
+    }
 
     # This function fetches the CAP file from a URL.
-    # and parses the contents into an object.
-    public function get($url) {
 
+    private function fetch($url) {
         #fetch the file
-        $xml = file_get_contents($url);
+        return file_get_contents($url);
+    }
 
-        $xml = simplexml_load_string($xml);
+    # Process the CAP using version 1.2 of the specification (no profile attached)
+    private function getPlain($url) {
+
+        $xml = simplexml_load_string($this->fetch($url));
+
+        # We don't need everything in the XML. So return
+        # specific elements.
+
+        $data->ident = "$xml->identifier";
+        $data->sender = "$xml->sender";
+        $data->senddate = "$xml->sent";
+        $data->status = "$xml->status";
+        $data->type = "$xml->msgType";
+        $data->source = "$xml->source";
+        $data->references = preg_split("/ /",$xml->references);
+        foreach ($xml->info as $info){
+            $data->body->category = (string)$info->category;
+            $data->body->event = (string)$info->event;
+            $data->body->urgency = (string)$info->urgency;
+            $data->body->severity = (string)$info->severity;
+            $data->body->certainty = (string)$info->certainty;
+            $data->body->effectivedate = (string)$info->effective;
+            $data->body->expirydate = (string)$info->expires;
+            $data->body->summary = (string)$info->headline;
+            $data->body->details = (string)$info->description;
+            $data->body->instructions = (string)$info->instructions;
+            $data->body->url = (string)$info->web;
+
+            # We only want certain objects from the area data
+            # Iterate through all of the area elements and only set specific elements
+            for ($i = 0; $i < count($info->area); $i++) {
+
+                # Set some variables
+                $flipped = "";
+
+                $data->body->area[$i]->description = (string)$info->area[$i]->areaDesc;
+                $data->body->area[$i]->polygon = (string)$info->area[$i]->polygon;
+
+                # Enhanced Well Known Text expects coordinates to be in X,Y (long,lat) format.
+                # We need to iterate through every point and flip the values.
+                foreach (preg_split("/ /",(string)$info->area[$i]->polygon) as $coords) {
+                    $coordinates = preg_split("/,/",$coords);
+                    #array_push($flipped,"$coordinates[1],$coordinates[0]");
+                    $flipped = $flipped ." $coordinates[1],$coordinates[0]";
+                }
+                $data->body->area[$i]->polygonEWKT = "SRID=4326;POLYGON(" . $flipped . ")";
+            }
+        }
+
+        return($data);
+
+    }
+
+    # Process the CAP using the Canadian Profile
+    private function getCA($url) {
+
+        $xml = simplexml_load_string($this->fetch($url));
 
         # We don't need everything in the XML. So return
         # specific elements.
