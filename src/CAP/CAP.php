@@ -22,6 +22,7 @@ class CAP {
 
         $data->ident = "$xml->identifier";
         $data->sender = "$xml->sender";
+        $data->senddate = "$xml->sent";
         $data->status = "$xml->status";
         $data->type = "$xml->msgType";
         $data->source = "$xml->source";
