@@ -121,8 +121,9 @@ class CAP {
                 foreach (preg_split("/ /",(string)$info->area[$i]->polygon) as $coords) {
                     $coordinates = preg_split("/,/",$coords);
                     #array_push($flipped,"$coordinates[1],$coordinates[0]");
-                    $flipped = $flipped ." $coordinates[1],$coordinates[0]";
+                    $flipped = $flipped ." $coordinates[1] $coordinates[0],";
                 }
+                $flipped = rtrim($flipped, ",");
                 $data->body->{$info->language}->area[$i]->polygonEWKT = "SRID=4326;POLYGON(" . $flipped . ")";
             }
         }
